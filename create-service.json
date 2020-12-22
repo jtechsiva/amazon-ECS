@@ -1,0 +1,29 @@
+{
+    "taskDefinition": "ecs-demo:1",
+    "cluster": "nginx-cluster",
+    "loadBalancers": [
+        {
+            "targetGroupArn": "arn:aws:elasticloadbalancing:ap-south-1:005406282235:targetgroup/target-group-1/4b8095572aac3b7b",
+            "containerName": "sample-website",
+            "containerPort": 80
+        }
+    ],
+    "desiredCount": 1,
+    "launchType": "FARGATE",
+    "schedulingStrategy": "REPLICA",
+    "deploymentController": {
+        "type": "CODE_DEPLOY"
+    },
+    "networkConfiguration": {
+        "awsvpcConfiguration": {
+            "subnets": [
+                "subnet-891618e1",
+                "subnet-5ec0bc12"
+            ],
+            "securityGroups": [
+                "sg-7038df17"
+            ],
+            "assignPublicIp": "ENABLED"
+        }
+    }
+}

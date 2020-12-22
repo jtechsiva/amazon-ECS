@@ -1,0 +1,106 @@
+ECS -  Fargate
+==============
+Ref : https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-ecs-ecr-codedeploy.html#tutorials-ecs-ecr-codedeploy-loadbal
+
+Key steps :
+-----------
+
+Required Roles
+--------------
+1. create IAM role- ecsTaskExecutionRole  with AmazonECSTaskExecutionRolePolicy
+2.                  CodeDeployECSRole AWSCodeDeployRoleForECS 
+
+TaskDefinition
+--------------
+2. Create taskdef.json and register task definition with this taskdef json file , replace image name as <IMAGE1_NAME>
+{
+    "executionRoleArn": "arn:aws:iam::account_ID:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "sample-website",
+            "image": "<IMAGE1_NAME>",
+            "essential": true,
+            "portMappings": [
+                {
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "containerPort": 80
+                }
+            ]
+        }
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "networkMode": "awsvpc",
+    "cpu": "256",
+    "memory": "512",
+    "family": "ecs-demo"
+}
+
+3. Create appspec.yaml file for codeDeploy
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: <TASK_DEFINITION>
+        LoadBalancerInfo:
+          ContainerName: "sample-website"
+          ContainerPort: 80
+4. commit appspec.yml and taskdef.json in CodeCommit aws repo
+
+prepare VPC and subnets
+-----------------------
+5. create 2 subnets -with default vpc in different Azs . Note subnet IDs
+   confirm gateway row is included in route table
+
+aws ecs register-task-definition --cli-input-json file://taskdef.json
+
+subnet ids:
+subnet-891618e1
+subnet-5ec0bc12
+
+security group
+--------------
+sg-7038df17
+
+
+aws ecs create-service --service-name nginx-service --cli-input-json file://create-service.json
+aws ecs describe-services --cluster cluster-name --services nginx-service
+
+ALB and Target Groups
+---------------------
+6. Create ALB - internet facing , ipv4
+	Add 2 listeners for server and other for host 80 and 8080
+7. create 2 target groups
+	- Note down the ARN of 1st target group
+8. Update ALB to include the target groups
+
+TargetGroup
+-----------
+arn:aws:elasticloadbalancing:ap-south-1:005406282235:targetgroup/target-group-1/4b8095572aac3b7b
+
+change 
+-taskdef 
+-clustername
+-targetgroup -1
+-subnet-1
+-subnet-2
+-security group
+
+ECS Cluster
+-----------
+9. Create ECS cluster - Netowrking only - Fargate
+	- create service from aws cli using  "create-service.json" file
+	- update 1st target group ARN (EC2-load balancing-target group-ARN)
+
+
+
+Try describe the service and see the details
+
+CodeDeploy and Pipeline
+-----------------------
+10. create application 
+11. create deployment group
+12. create a 2 stage pipeline - build and deploy
